@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<head>
+  <meta charset=utf-8>
+  <title>BINGO</title>
+  <script src="http://fb.me/react-0.10.0.js"></script>
+  <script src="http://fb.me/JSXTransformer-0.10.0.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0 }
+    html, body { color: #222; font-family: Helvetica, Arial, sans-serif; font-size: 4vh; }
+    table { border-collapse: collapse; margin: 0 auto; }
+    thead { background-color: gainsboro; }
+    th, td { height: 16.667vh; text-align: center; vertical-align: middle; width: 16.667vh; }
+    th { font-size: 5vh; }
+    td.checked { background-color: tomato; color: white; }
+  </style>
+</head>
+<body>
+  <div id="bingo"></div>
+  <script type="text/jsx">
+    /**
+     * @jsx React.DOM
+     */
+
+    var BingoNumber = React.createClass({
+      handleClick: function() {
+        this.props.onClick(this.props.key);
+      },
+
+      render: function() {
+        var checked = this.props.children === "FREE" || this.props.checked;
+        var tdClassName = checked ? "checked" : null;
+        return (
+          <td className={tdClassName} onClick={this.handleClick}>{this.props.children}</td>
+        );
+      }
+    });
+
+    var BingoCard = React.createClass({
+      getInitialState: function() {
+        var size = Math.sqrt(this.props.numbers.length);
+        var numbers = {};
+        var rows = [], row;
+        var columns = [];
+        var tlToBr = [];
+        var trToBl = [];
+
+        this.props.numbers.forEach(function(number, i) {
+          if (i % size === 0) {
+            row = [];
+            rows.push(row);
+          }
+
+          var obj = {
+            id: i + 1,
+            value: number,
+            checked: number === "FREE"
+          };
+          numbers[i + 1] = obj;
+          row.push(obj);
+          var column = i % size;
+          columns[column] || (columns[column] = []);
+          columns[column].push(obj);
+          if (column === rows.length - 1) {
+            tlToBr.push(obj);
+          }
+          if (column === size - rows.length) {
+            trToBl.push(obj);
+          }
+        });
+
+        return {
+          numbers: numbers,
+          rows: rows,
+          chances: rows.concat(columns, [tlToBr, trToBl])
+        };
+      },
+
+      handleClick: function(id, checked) {
+        var number = this.state.numbers[id];
+        number.checked = !number.checked;
+
+        this.forceUpdate(function() {
+          if (this.isBingo()) {
+            alert("BINGO!");
+          }
+        });
+      },
+
+      isBingo: function() {
+        return this.state.chances.some(function(numbers) {
+          return numbers.every(function(number) {
+            return number.checked;
+          });
+        });
+      },
+
+      render: function() {
+        return (
+          <table>
+            <thead>
+              <tr>
+                {"BINGO".split("").map(function(letter, i) {
+                  var letterKey = "letter-" + i;
+                  return <th key={letterKey}>{letter}</th>;
+                })}
+              </tr>
+            </thead>
+            <tbody>
+              {this.state.rows.map(function(row, i) {
+                var rowKey = "row-" + i;
+                return (
+                  <tr key={rowKey}>
+                    {row.map(function(number) {
+                      return <BingoNumber key={number.id} checked={number.checked} onClick={this.handleClick}>{number.value}</BingoNumber>;
+                    }.bind(this))}
+                  </tr>
+                );
+              }.bind(this))}
+            </tbody>
+          </table>
+        );
+      }
+    });
+
+    var numbers = [
+      8,  19, 39, 55, 73,
+      2,  17, 31, 51, 62,
+      15, 23, "FREE", 47, 64,
+      9,  18, 44, 60, 70,
+      13, 21, 37, 53, 72
+    ];
+
+    React.renderComponent(
+      <BingoCard numbers={numbers} />,
+      document.getElementById("bingo")
+    );
+  </script>
+</body>
